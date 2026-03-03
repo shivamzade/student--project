@@ -1,0 +1,52 @@
+// Prisma generator
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Database connection
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===============================
+// STUDENT TABLE
+// ===============================
+model Student {
+  // Primary Key
+  id        Int      @id @default(autoincrement())
+
+  // Student name
+  name      String
+
+  // Unique email
+  email     String   @unique
+
+  // Age of student
+  age       Int
+
+  // Auto timestamp
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One-to-Many relation
+  marks     Mark[]
+}
+
+// ===============================
+// MARK TABLE
+// ===============================
+model Mark {
+  id        Int     @id @default(autoincrement())
+
+  subject   String
+  score     Int
+
+  // Foreign key
+  studentId Int
+
+  // Relation with Student
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
