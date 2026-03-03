@@ -5,32 +5,34 @@ generator client {
 
 // Database connection
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // ===============================
-// STUDENT TABLE
+// MEMBER TABLE
 // ===============================
-model Student {
+model Member {
   // Primary Key
   id        Int      @id @default(autoincrement())
 
-  // Student name
-  name      String
 
-  // Unique email
-  email     String   @unique
+  memberName      String
+  memberEmail     String   @unique
+  memberAge       Int
+  memberParentId  Int?
 
-  // Age of student
-  age       Int
+  // Self-relation for parent-child hierarchy
+  parent    Member?  @relation("MemberParent", fields: [memberParentId], references: [id], onDelete: SetNull)
+  children  Member[] @relation("MemberParent")
 
-  // Auto timestamp
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // One-to-Many relation
   marks     Mark[]
+
+  @@index([memberParentId])
 }
 
 // ===============================
@@ -38,15 +40,14 @@ model Student {
 // ===============================
 model Mark {
   id        Int     @id @default(autoincrement())
-
   subject   String
   score     Int
-
+  
   // Foreign key
-  studentId Int
+  memberId  Int
 
-  // Relation with Student
-  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  // Relation with Member
+  member    Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  @@index([studentId])
+  @@index([memberId])
 }

@@ -1,39 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Card } from 'react-bootstrap';
-import { studentApi } from '../services/api';
+import { memberApi } from '../services/api';
 import Swal from 'sweetalert2';
 
-const StudentForm = ({ show, onHide, student, onSave }) => {
+const MemberForm = ({ show, onHide, member, onSave }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    age: '',
-    grade: '',
+    memberName: '',
+    memberEmail: '',
+    memberAge: '',
+    memberParentId: '',
     marks: [{ subject: '', score: '' }],
   });
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (student) {
+    // Fetch all members for parent selection dropdown
+    const fetchMembers = async () => {
+      try {
+        const response = await memberApi.getMembers(1, 100);
+        setMembers(response.data.data || []);
+      } catch (error) {
+        console.error('Error fetching members:', error);
+      }
+    };
+    fetchMembers();
+  }, []);
+
+  useEffect(() => {
+    if (member) {
       setFormData({
-        name: student.name || '',
-        email: student.email || '',
-        age: student.age || '',
-        grade: student.grade || '',
-        marks: student.marks?.length > 0 
-          ? student.marks.map(m => ({ subject: m.subject, score: m.score }))
+        memberName: member.memberName || '',
+        memberEmail: member.memberEmail || '',
+        memberAge: member.memberAge || '',
+        memberParentId: member.memberParentId || '',
+        marks: member.marks?.length > 0 
+          ? member.marks.map(m => ({ subject: m.subject, score: m.score }))
           : [{ subject: '', score: '' }],
       });
     } else {
       setFormData({
-        name: '',
-        email: '',
-        age: '',
-        grade: '',
+        memberName: '',
+        memberEmail: '',
+        memberAge: '',
+        memberParentId: '',
         marks: [{ subject: '', score: '' }],
       });
     }
-  }, [student, show]);
+  }, [member, show]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,24 +91,26 @@ const StudentForm = ({ show, onHide, student, onSave }) => {
       const validMarks = formData.marks.filter(m => m.subject && m.score);
       const submitData = {
         ...formData,
+        memberAge: Number(formData.memberAge),
+        memberParentId: formData.memberParentId ? Number(formData.memberParentId) : null,
         marks: validMarks,
       };
 
-      if (student) {
-        await studentApi.updateStudent(student.id, submitData);
+      if (member) {
+        await memberApi.updateMember(member.id, submitData);
         Swal.fire({
           icon: 'success',
           title: 'Updated!',
-          text: 'Student record has been updated successfully.',
+          text: 'Member record has been updated successfully.',
           timer: 2000,
           showConfirmButton: false,
         });
       } else {
-        await studentApi.createStudent(submitData);
+        await memberApi.createMember(submitData);
         Swal.fire({
           icon: 'success',
           title: 'Created!',
-          text: 'New student has been added successfully.',
+          text: 'New member has been added successfully.',
           timer: 2000,
           showConfirmButton: false,
         });
@@ -112,39 +128,42 @@ const StudentForm = ({ show, onHide, student, onSave }) => {
     }
   };
 
+  // Filter out current member from parent dropdown to prevent self-reference
+  const availableParents = members.filter(m => m.id !== member?.id);
+
   return (
     <Modal show={show} onHide={onHide} size="lg" backdrop="static">
       <Modal.Header closeButton className="bg-primary text-white">
-        <Modal.Title>{student ? 'Edit Student' : 'Add New Student'}</Modal.Title>
+        <Modal.Title>{member ? 'Edit Member' : 'Add New Member'}</Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <Card className="mb-3">
             <Card.Header className="bg-light">
-              <h6 className="mb-0">Student Information</h6>
+              <h6 className="mb-0">Member Information</h6>
             </Card.Header>
             <Card.Body>
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Full Name <span className="text-danger">*</span></Form.Label>
+                    <Form.Label>Member Name <span className="text-danger">*</span></Form.Label>
                     <Form.Control
                       type="text"
-                      name="name"
-                      value={formData.name}
+                      name="memberName"
+                      value={formData.memberName}
                       onChange={handleChange}
-                      placeholder="Enter student name"
+                      placeholder="Enter member name"
                       required
                     />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Email <span className="text-danger">*</span></Form.Label>
+                    <Form.Label>Member Email <span className="text-danger">*</span></Form.Label>
                     <Form.Control
                       type="email"
-                      name="email"
-                      value={formData.email}
+                      name="memberEmail"
+                      value={formData.memberEmail}
                       onChange={handleChange}
                       placeholder="Enter email address"
                       required
@@ -155,28 +174,37 @@ const StudentForm = ({ show, onHide, student, onSave }) => {
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Age</Form.Label>
+                    <Form.Label>Member Age <span className="text-danger">*</span></Form.Label>
                     <Form.Control
                       type="number"
-                      name="age"
-                      value={formData.age}
+                      name="memberAge"
+                      value={formData.memberAge}
                       onChange={handleChange}
                       placeholder="Enter age"
                       min="1"
-                      max="100"
+                      max="150"
+                      required
                     />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Grade</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="grade"
-                      value={formData.grade}
+                    <Form.Label>Parent Member</Form.Label>
+                    <Form.Select
+                      name="memberParentId"
+                      value={formData.memberParentId}
                       onChange={handleChange}
-                      placeholder="Enter grade (e.g., A, B, C)"
-                    />
+                    >
+                      <option value="">Select Parent (Optional)</option>
+                      {availableParents.map((parent) => (
+                        <option key={parent.id} value={parent.id}>
+                          {parent.memberName} ({parent.memberEmail})
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Form.Text className="text-muted">
+                      Select a parent member to establish hierarchy
+                    </Form.Text>
                   </Form.Group>
                 </Col>
               </Row>
@@ -237,7 +265,7 @@ const StudentForm = ({ show, onHide, student, onSave }) => {
             Cancel
           </Button>
           <Button variant="primary" type="submit" disabled={loading}>
-            {loading ? 'Saving...' : (student ? 'Update' : 'Save')}
+            {loading ? 'Saving...' : (member ? 'Update' : 'Save')}
           </Button>
         </Modal.Footer>
       </Form>
@@ -245,4 +273,4 @@ const StudentForm = ({ show, onHide, student, onSave }) => {
   );
 };
 
-export default StudentForm;
+export default MemberForm;

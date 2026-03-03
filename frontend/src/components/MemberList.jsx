@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Badge, Pagination, Spinner, Alert, Card, Row, Col, Form } from 'react-bootstrap';
-import { studentApi } from '../services/api';
-import StudentForm from './StudentForm';
+import { memberApi } from '../services/api';
+import MemberForm from './MemberForm';
 import Swal from 'sweetalert2';
 
-const StudentList = () => {
-  const [students, setStudents] = useState([]);
+const MemberList = () => {
+
+
+  const [members, setMembers] = useState([]);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -15,58 +17,58 @@ const StudentList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedMember, setSelectedMember] = useState(null);
 
-  const fetchStudents = async (page = 1, limit = 5) => {
+  const fetchMembers = async (page = 1, limit = 5) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await studentApi.getStudents(page, limit);
-      setStudents(response.data.data);
+      const response = await memberApi.getMembers(page, limit);
+      setMembers(response.data.data);
       setPagination({
-        currentPage: response.data.currentPage,
-        totalPages: response.data.totalPages,
-        totalCount: response.data.totalCount,
-        limit: response.data.limit,
+        currentPage: response.data.meta?.page || page,
+        totalPages: response.data.meta?.totalPages || 1,
+        totalCount: response.data.meta?.total || 0,
+        limit: limit,
       });
     } catch (err) {
-      setError('Failed to fetch students. Please make sure the backend server is running.');
-      console.error('Error fetching students:', err);
+      setError('Failed to fetch members. Please make sure the backend server is running.');
+      console.error('Error fetching members:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStudents();
+    fetchMembers();
   }, []);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= pagination.totalPages) {
-      fetchStudents(page, pagination.limit);
+      fetchMembers(page, pagination.limit);
     }
   };
 
   const handleLimitChange = (e) => {
     const newLimit = parseInt(e.target.value);
-    fetchStudents(1, newLimit);
+    fetchMembers(1, newLimit);
   };
 
   const handleAdd = () => {
-    setSelectedStudent(null);
+    setSelectedMember(null);
     setShowModal(true);
   };
 
   const handleEdit = async (id) => {
     try {
-      const response = await studentApi.getStudentById(id);
-      setSelectedStudent(response.data);
+      const response = await memberApi.getMemberById(id);
+      setSelectedMember(response.data);
       setShowModal(true);
     } catch (err) {
       Swal.fire({
         icon: 'error',
         title: 'Error!',
-        text: 'Failed to fetch student details.',
+        text: 'Failed to fetch member details.',
       });
     }
   };
@@ -85,27 +87,27 @@ const StudentList = () => {
 
     if (result.isConfirmed) {
       try {
-        await studentApi.deleteStudent(id);
+        await memberApi.deleteMember(id);
         Swal.fire({
           icon: 'success',
           title: 'Deleted!',
-          text: 'Student has been deleted successfully.',
+          text: 'Member has been deleted successfully.',
           timer: 2000,
           showConfirmButton: false,
         });
-        fetchStudents(pagination.currentPage, pagination.limit);
+        fetchMembers(pagination.currentPage, pagination.limit);
       } catch (err) {
         Swal.fire({
           icon: 'error',
           title: 'Error!',
-          text: 'Failed to delete student.',
+          text: 'Failed to delete member.',
         });
       }
     }
   };
 
   const handleSave = () => {
-    fetchStudents(pagination.currentPage, pagination.limit);
+    fetchMembers(pagination.currentPage, pagination.limit);
   };
 
   const renderPagination = () => {
@@ -178,30 +180,17 @@ const StudentList = () => {
     return (total / marks.length).toFixed(1);
   };
 
-  const getGradeBadge = (grade) => {
-    if (!grade) return <Badge bg="secondary">N/A</Badge>;
-    const gradeColorMap = {
-      'A': 'success',
-      'B': 'primary',
-      'C': 'info',
-      'D': 'warning',
-      'F': 'danger',
-    };
-    const color = gradeColorMap[grade.toUpperCase()] || 'secondary';
-    return <Badge bg={color}>{grade}</Badge>;
-  };
-
   return (
-    <div className="student-list">
+    <div className="member-list">
       <Card className="mb-4 shadow">
         <Card.Header className="bg-primary text-white">
           <Row className="align-items-center">
             <Col>
-              <h4 className="mb-0">Student Management System</h4>
+              <h4 className="mb-0">Member Management System</h4>
             </Col>
             <Col className="text-end">
               <Button variant="light" onClick={handleAdd}>
-                + Add New Student
+                + Add New Member
               </Button>
             </Col>
           </Row>
@@ -216,7 +205,7 @@ const StudentList = () => {
           {loading ? (
             <div className="text-center py-5">
               <Spinner animation="border" variant="primary" />
-              <p className="mt-2">Loading students...</p>
+              <p className="mt-2">Loading members...</p>
             </div>
           ) : (
             <>
@@ -225,36 +214,44 @@ const StudentList = () => {
                   <thead className="table-dark">
                     <tr>
                       <th>#</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Age</th>
-                      <th>Grade</th>
+                      <th>Member Name</th>
+                      <th>Member Email</th>
+                      <th>Member Age</th>
+                      <th>Parent</th>
                       <th>Subjects</th>
                       <th>Avg Score</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {students.length === 0 ? (
+                    {members.length === 0 ? (
                       <tr>
                         <td colSpan="8" className="text-center py-4">
-                          <Alert variant="info">No students found. Add a new student to get started!</Alert>
+                          <Alert variant="info">No members found. Add a new member to get started!</Alert>
                         </td>
                       </tr>
                     ) : (
-                      students.map((student, index) => (
-                        <tr key={student.id}>
+                      members.map((member, index) => (
+                        <tr key={member.id}>
                           <td>{(pagination.currentPage - 1) * pagination.limit + index + 1}</td>
                           <td>
-                            <strong>{student.name}</strong>
+                            <strong>{member.memberName}</strong>
                           </td>
-                          <td>{student.email}</td>
-                          <td>{student.age || 'N/A'}</td>
-                          <td>{getGradeBadge(student.grade)}</td>
+                          <td>{member.memberEmail}</td>
+                          <td>{member.memberAge || 'N/A'}</td>
                           <td>
-                            {student.marks?.length > 0 ? (
+                            {member.parent ? (
+                              <Badge bg="info" title={member.parent.memberEmail}>
+                                {member.parent.memberName}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted">None</span>
+                            )}
+                          </td>
+                          <td>
+                            {member.marks?.length > 0 ? (
                               <div>
-                                {student.marks.map((mark, idx) => (
+                                {member.marks.map((mark, idx) => (
                                   <Badge bg="secondary" className="me-1 mb-1" key={idx}>
                                     {mark.subject}: {mark.score}
                                   </Badge>
@@ -265,8 +262,8 @@ const StudentList = () => {
                             )}
                           </td>
                           <td>
-                            <Badge bg={parseFloat(getAverageScore(student.marks)) >= 60 ? 'success' : 'warning'}>
-                              {getAverageScore(student.marks)}
+                            <Badge bg={parseFloat(getAverageScore(member.marks)) >= 60 ? 'success' : 'warning'}>
+                              {getAverageScore(member.marks)}
                             </Badge>
                           </td>
                           <td>
@@ -274,14 +271,14 @@ const StudentList = () => {
                               variant="outline-primary"
                               size="sm"
                               className="me-1"
-                              onClick={() => handleEdit(student.id)}
+                              onClick={() => handleEdit(member.id)}
                             >
                               Edit
                             </Button>
                             <Button
                               variant="outline-danger"
                               size="sm"
-                              onClick={() => handleDelete(student.id, student.name)}
+                              onClick={() => handleDelete(member.id, member.memberName)}
                             >
                               Delete
                             </Button>
@@ -293,7 +290,7 @@ const StudentList = () => {
                 </Table>
               </div>
 
-              {students.length > 0 && (
+              {members.length > 0 && (
                 <Row className="align-items-center mt-3">
                   <Col md={4}>
                     <div className="d-flex align-items-center">
@@ -316,7 +313,7 @@ const StudentList = () => {
                     <span className="text-muted">
                       Showing {((pagination.currentPage - 1) * pagination.limit) + 1} to{' '}
                       {Math.min(pagination.currentPage * pagination.limit, pagination.totalCount)} of{' '}
-                      {pagination.totalCount} students
+                      {pagination.totalCount} members
                     </span>
                   </Col>
                   <Col md={4} className="d-flex justify-content-end">
@@ -331,14 +328,14 @@ const StudentList = () => {
         </Card.Body>
       </Card>
 
-      <StudentForm
+      <MemberForm
         show={showModal}
         onHide={() => setShowModal(false)}
-        student={selectedStudent}
+        member={selectedMember}
         onSave={handleSave}
       />
     </div>
   );
 };
 
-export default StudentList;
+export default MemberList;

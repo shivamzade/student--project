@@ -9,30 +9,30 @@ const api = axios.create({
   },
 });
 
-export const studentApi = {
-  // Get all students with pagination
-  getStudents: (page = 1, limit = 5) => {
-    return api.get(`/students?page=${page}&limit=${limit}`);
+export const memberApi = {
+  // Get all members with pagination
+  getMembers: (page = 1, limit = 5) => {
+    return api.get(`/members?page=${page}&limit=${limit}`);
   },
 
-  // Get single student by ID with marks
-  getStudentById: (id) => {
-    return api.get(`/students/${id}`);
+  // Get single member by ID with marks
+  getMemberById: (id) => {
+    return api.get(`/members/${id}`);
   },
 
-  // Create new student with marks
-  createStudent: (studentData) => {
-    return api.post('/students', studentData);
+  // Create new member with marks
+  createMember: (memberData) => {
+    return api.post('/members', memberData);
   },
 
-  // Update student
-  updateStudent: (id, studentData) => {
-    return api.put(`/students/${id}`, studentData);
+  // Update member
+  updateMember: (id, memberData) => {
+    return api.put(`/members/${id}`, memberData);
   },
 
-  // Delete student
-  deleteStudent: (id) => {
-    return api.delete(`/students/${id}`);
+  // Delete member
+  deleteMember: (id) => {
+    return api.delete(`/members/${id}`);
   },
 };
 
